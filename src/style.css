@@ -1,0 +1,113 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #071426;
+  color: white;
+}
+
+.app {
+  min-height: 100vh;
+  background: linear-gradient(160deg, #102d50, #071426 55%);
+}
+
+header {
+  padding: 28px 20px;
+  border-bottom: 1px solid #29415e;
+}
+
+header h2 {
+  margin: 0;
+  font-size: 22px;
+  letter-spacing: 1px;
+}
+
+header span {
+  color: #36a5ff;
+}
+
+header small {
+  display: block;
+  margin-top: 8px;
+  color: #9bb2ca;
+  letter-spacing: 2px;
+  font-size: 10px;
+}
+
+main {
+  width: min(100% - 36px, 460px);
+  margin: 55px auto;
+}
+
+.login {
+  padding: 28px 22px;
+  background: #10243d;
+  border: 1px solid #294768;
+  border-radius: 16px;
+}
+
+h1 {
+  font-size: 27px;
+  margin-bottom: 8px;
+}
+
+main p {
+  color: #a8bad0;
+  line-height: 1.5;
+}
+
+input {
+  width: 100%;
+  padding: 15px;
+  margin-top: 14px;
+  border-radius: 9px;
+  border: 1px solid #395675;
+  background: #091a2d;
+  color: white;
+  font-size: 15px;
+}
+
+button {
+  width: 100%;
+  padding: 15px;
+  margin-top: 17px;
+  border: 0;
+  border-radius: 9px;
+  background: #1688ed;
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.6;
+}
+
+button.register {
+  margin-top: 10px;
+  background: #203b59;
+}
+
+.message {
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.panel {
+  padding: 20px;
+  margin: 25px 0;
+  border-radius: 12px;
+  background: #102b49;
+  border: 1px solid #315273;
+}
+
+footer {
+  padding: 25px;
+  text-align: center;
+  color: #718ba6;
+  font-size: 11px;
+  letter-spacing: 1px;
+}
