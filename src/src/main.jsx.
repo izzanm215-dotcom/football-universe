@@ -3,6 +3,8 @@ import { createRoot } from 'react-dom/client'
 import { createClient } from '@supabase/supabase-js'
 import './style.css'
 
+const SITE_URL = 'https://football-universe-lake.vercel.app'
+
 const supabase = createClient(
   'https://qnzdazpipfxogcgbeqqy.supabase.co',
   'sb_publishable_OTNdYoZlAGSCJZec9LY1vw_HVINwVIT'
@@ -11,45 +13,131 @@ const supabase = createClient(
 function App() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [newPassword, setNewPassword] = useState('')
   const [user, setUser] = useState(null)
+  const [view, setView] = useState('login')
   const [message, setMessage] = useState('')
   const [loading, setLoading] = useState(false)
+
+  React.useEffect(() => {
+    const hashParams = new URLSearchParams(
+      window.location.hash.slice(1)
+    )
+
+    if (hashParams.get('type') === 'recovery') {
+      setView('reset')
+    }
+
+    supabase.auth.getSession().then(({ data }) => {
+      setUser(data.session?.user ?? null)
+    })
+
+    const { data } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setUser(session?.user ?? null)
+
+        if (event === 'PASSWORD_RECOVERY') {
+          setView('reset')
+          setMessage('')
+        }
+      }
+    )
+
+    return () => data.subscription.unsubscribe()
+  }, [])
 
   async function login() {
     setLoading(true)
     setMessage('')
+
     const { data, error } = await supabase.auth.signInWithPassword({
-      email, password
+      email,
+      password
     })
-    if (error) setMessage(error.message)
-    else setUser(data.user)
+
+    if (error) {
+      setMessage(error.message)
+    } else {
+      setUser(data.user)
+      setView('login')
+    }
+
     setLoading(false)
   }
 
   async function register() {
     setLoading(true)
     setMessage('')
+
     const { error } = await supabase.auth.signUp({
-      email, password
+      email,
+      password
     })
-    setMessage(error ? error.message : 'Pendaftaran berhasil. Periksa email untuk konfirmasi akun.')
+
+    setMessage(
+      error
+        ? error.message
+        : 'Pendaftaran berhasil. Periksa email untuk konfirmasi akun.'
+    )
+
+    setLoading(false)
+  }
+
+  async function forgotPassword() {
+    setLoading(true)
+    setMessage('')
+
+    const { error } = await supabase.auth.resetPasswordForEmail(
+      email,
+      {
+        redirectTo: SITE_URL
+      }
+    )
+
+    setMessage(
+      error
+        ? error.message
+        : 'Link pemulihan password telah dikirim. Periksa email kamu.'
+    )
+
+    setLoading(false)
+  }
+
+  async function updatePassword() {
+    setLoading(true)
+    setMessage('')
+
+    if (newPassword.length < 6) {
+      setMessage('Password baru minimal 6 karakter.')
+      setLoading(false)
+      return
+    }
+
+    const { error } = await supabase.auth.updateUser({
+      password: newPassword
+    })
+
+    if (error) {
+      setMessage(error.message)
+    } else {
+      await supabase.auth.signOut()
+      setUser(null)
+      setPassword('')
+      setNewPassword('')
+      setView('login')
+      setMessage('Password berhasil diperbarui. Silakan masuk kembali.')
+      window.history.replaceState(null, '', SITE_URL)
+    }
+
     setLoading(false)
   }
 
   async function logout() {
     await supabase.auth.signOut()
     setUser(null)
+    setView('login')
+    setMessage('')
   }
-
-  React.useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setUser(data.session?.user ?? null)
-    })
-    const { data } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null)
-    })
-    return () => data.subscription.unsubscribe()
-  }, [])
 
   return (
     <div className="app">
@@ -58,38 +146,111 @@ function App() {
         <small>YOUR COMMUNITY FOOTBALL LEAGUE</small>
       </header>
 
-      {!user ? (
+      {view === 'reset' ? (
         <main className="login">
-          <h1>Masuk ke Universe</h1>
-          <p>Tempat klub dan pemain berkumpul.</p>
-          <input
-            type="email"
-            placeholder="Alamat email"
-            value={email}
-            onChange={e => setEmail(e.target.value)}
-          />
+          <h1>Buat Password Baru</h1>
+          <p>Masukkan password baru untuk akun kamu.</p>
+
           <input
             type="password"
-            placeholder="Password"
-            value={password}
-            onChange={e => setPassword(e.target.value)}
+            placeholder="Password baru"
+            value={newPassword}
+            onChange={e => setNewPassword(e.target.value)}
           />
-          <button onClick={login} disabled={loading}>
-            {loading ? 'Memproses...' : 'MASUK'}
+
+          <button onClick={updatePassword} disabled={loading}>
+            {loading ? 'Memproses...' : 'SIMPAN PASSWORD'}
           </button>
-          <button className="register" onClick={register} disabled={loading}>
-            DAFTAR AKUN
-          </button>
+
+          {message && <p className="message">{message}</p>}
+        </main>
+      ) : !user ? (
+        <main className="login">
+          {view === 'forgot' ? (
+            <>
+              <h1>Reset Password</h1>
+              <p>Masukkan email akun untuk menerima link pemulihan.</p>
+
+              <input
+                type="email"
+                placeholder="Alamat email"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+              />
+
+              <button onClick={forgotPassword} disabled={loading}>
+                {loading ? 'Mengirim...' : 'KIRIM LINK RESET'}
+              </button>
+
+              <button
+                className="register"
+                onClick={() => {
+                  setView('login')
+                  setMessage('')
+                }}
+              >
+                KEMBALI KE LOGIN
+              </button>
+            </>
+          ) : (
+            <>
+              <h1>Masuk ke Universe</h1>
+              <p>Tempat klub dan pemain berkumpul.</p>
+
+              <input
+                type="email"
+                placeholder="Alamat email"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+              />
+
+              <input
+                type="password"
+                placeholder="Password"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+              />
+
+              <button onClick={login} disabled={loading}>
+                {loading ? 'Memproses...' : 'MASUK'}
+              </button>
+
+              <button
+                className="register"
+                onClick={register}
+                disabled={loading}
+              >
+                DAFTAR AKUN
+              </button>
+
+              <button
+                onClick={() => {
+                  setView('forgot')
+                  setMessage('')
+                }}
+                style={{
+                  background: 'transparent',
+                  color: '#70baff',
+                  marginTop: 8
+                }}
+              >
+                LUPA PASSWORD?
+              </button>
+            </>
+          )}
+
           {message && <p className="message">{message}</p>}
         </main>
       ) : (
         <main>
           <h1>Selamat datang!</h1>
           <p>{user.email}</p>
+
           <section className="panel">
             <h2>Football Universe</h2>
             <p>Kompetisi sepak bola komunitas dimulai di sini.</p>
           </section>
+
           <button onClick={logout}>KELUAR</button>
         </main>
       )}
